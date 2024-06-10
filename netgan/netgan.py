@@ -10,6 +10,7 @@ Technical University of Munich
 """
 
 import tensorflow as tf
+
 from netgan import utils
 import time
 import numpy as np
@@ -462,7 +463,7 @@ class NetGAN:
         print("**** Starting training. ****")
 
         for _it in range(max_iters):
-
+   
             if _it > 0 and _it % (2500) == 0:
                 t = time.time() - starting_time
                 print('{:<7}/{:<8} training iterations, took {} seconds so far...'.format(_it, max_iters, int(t)))
@@ -502,20 +503,17 @@ class NetGAN:
                 graphs.append(_graph)
                 eo.append(edge_overlap)
 
-                edge_scores = np.append(gr[tuple(val_ones.T)].A1, gr[tuple(val_zeros.T)].A1)
+                # edge_scores = np.append(gr[tuple(val_ones.T)].A1, gr[tuple(val_zeros.T)].A1)
 
-                # Compute Validation ROC-AUC and average precision scores.
-                val_performances.append((roc_auc_score(actual_labels_val, edge_scores),
-                                               average_precision_score(actual_labels_val, edge_scores)))
+                # # Compute Validation ROC-AUC and average precision scores.
+                # val_performances.append((roc_auc_score(actual_labels_val, edge_scores),
+                #                                average_precision_score(actual_labels_val, edge_scores)))
 
                 # Update Gumbel temperature
                 temperature = np.maximum(self.params['temp_start'] * np.exp(-(1-self.params['temperature_decay']) * _it),
                                          self.params['min_temperature'])
 
-                print("**** Iter {:<6} Val ROC {:.3f}, AP: {:.3f}, EO {:.3f} ****".format(_it,
-                                                                               val_performances[-1][0],
-                                                                               val_performances[-1][1],
-                                                                               edge_overlap/A_orig.sum()))
+                print("**** Iter {:<6}  EO {:.3f} ****".format(_it, edge_overlap/A_orig.sum()))
 
                 if stopping is None:   # Evaluate VAL criterion
                     if np.sum(val_performances[-1]) > best_performance:
@@ -544,10 +542,10 @@ class NetGAN:
                 plt.show()
 
         print("**** Training completed after {} iterations. ****".format(_it))
-        plt.plot(disc_losses[9::], label="Critic loss")
-        plt.plot(gen_losses[9::], label="Generator loss")
-        plt.legend()
-        plt.show()
+        # plt.plot(disc_losses[9::], label="Critic loss")
+        # plt.plot(gen_losses[9::], label="Generator loss")
+        # plt.legend()
+        # plt.show()
         if stopping is None:
             saver.restore(self.session, save_file)
         #### Training completed.

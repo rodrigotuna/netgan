@@ -26,9 +26,8 @@ def load_npz(file_name):
     if not file_name.endswith('.npz'):
         file_name += '.npz'
     with np.load(file_name, allow_pickle=True) as loader:
-        loader = dict(loader)['arr_0'].item()
-        adj_matrix = sp.csr_matrix((loader['adj_data'], loader['adj_indices'],
-                                              loader['adj_indptr']), shape=loader['adj_shape'])
+        loader = dict(loader)
+        adj_matrix = sp.csr_matrix(loader['arr_0'])
 
         if 'attr_data' in loader:
             attr_matrix = sp.csr_matrix((loader['attr_data'], loader['attr_indices'],
@@ -36,7 +35,10 @@ def load_npz(file_name):
         else:
             attr_matrix = None
 
-        labels = loader.get('labels')
+        if 'labels' in loader: 
+            labels = loader.get('labels')
+        else:
+            labels = None
 
     return adj_matrix, attr_matrix, labels
 
@@ -144,7 +146,7 @@ def train_val_test_split_adjacency(A, p_val=0.10, p_test=0.05, seed=0, neg_mul=1
         Indices of the test non-edges
 
     """
-    assert p_val + p_test > 0
+    #assert p_val + p_test > 0
     assert A.max() == 1  # no weights
     assert A.min() == 0  # no negative edges
     assert A.diagonal().sum() == 0  # no self-loops
@@ -165,7 +167,6 @@ def train_val_test_split_adjacency(A, p_val=0.10, p_test=0.05, seed=0, neg_mul=1
     E = A.nnz
     N = A.shape[0]
     s_train = int(E * (1 - p_val - p_test))
-
     idx = np.arange(N)
 
     # hold some edges so each node appears at least once
@@ -263,8 +264,8 @@ def train_val_test_split_adjacency(A, p_val=0.10, p_test=0.05, seed=0, neg_mul=1
         test_zeros = np.array(test_zeros)
 
     # split the test set into validation and test set
-    s_val_ones = int(len(test_ones) * p_val / (p_val + p_test))
-    s_val_zeros = int(len(test_zeros) * p_val / (p_val + p_test))
+    s_val_ones = int(len(test_ones) * p_val / (p_val + p_test)) if p_val + p_test != 0 else 0
+    s_val_zeros = int(len(test_zeros) * p_val / (p_val + p_test)) if p_val + p_test != 0 else 0
 
     val_ones = test_ones[:s_val_ones]
     test_ones = test_ones[s_val_ones:]
@@ -276,10 +277,10 @@ def train_val_test_split_adjacency(A, p_val=0.10, p_test=0.05, seed=0, neg_mul=1
         # put (j, i) edges for every (i, j) edge in the respective sets and form back original A
         symmetrize = lambda x: np.row_stack((x, np.column_stack((x[:, 1], x[:, 0]))))
         train_ones = symmetrize(train_ones)
-        val_ones = symmetrize(val_ones)
-        val_zeros = symmetrize(val_zeros)
-        test_ones = symmetrize(test_ones)
-        test_zeros = symmetrize(test_zeros)
+        val_ones = val_ones if len(val_ones) == 0 else symmetrize(val_ones)
+        val_zeros = val_zeros if len(val_zeros) == 0 else symmetrize(val_zeros)
+        test_ones = test_ones if len(test_ones) == 0 else symmetrize(test_ones)
+        test_zeros = test_zeros if len(test_zeros) == 0 else symmetrize(test_zeros)
         A = A.maximum(A.T)
 
     if asserts:
