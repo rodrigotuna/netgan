@@ -56,11 +56,12 @@ def main():
 
     sample_many = netgan.generate_discrete(10000, reuse=True)
     samples = []
-
-    for _ in range(6000):
+    
+    for _ in range(500):
         if (_+1) % 500 == 0:
             print(_)
         samples.append(sample_many.eval({netgan.tau: 0.5}))
+
 
     rws = np.array(samples).reshape([-1, rw_len])
     scores_matrix = utils.score_matrix_from_random_walks(rws, _N).tocsr()
@@ -69,6 +70,8 @@ def main():
     
     #Save sampled_graph as a nx graph
     G = nx.from_numpy_array(sampled_graph)
+    G.remove_nodes_from(list(nx.isolates(G)))
+    print(G)
     pickle.dump(G, open(f'{dataset}_netgan.pickle', 'wb'))
 
 
